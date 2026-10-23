@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { eq } from 'drizzle-orm'
 import { db } from './db/index'
+import { authMiddleware } from './middleware/auth'
 import { students } from './db/schema'
 import { zValidator } from '@hono/zod-validator'
 import { createStudentSchema, updateStudentSchema } from './schemas/students'
@@ -10,6 +11,8 @@ const app = new Hono()
 app.get('/', (c) => {
     return c.text('Hello Hono!')
 })
+
+app.use('/api/*', authMiddleware)
 
 app.post('/api/v1/students', zValidator('json', createStudentSchema), async (c) => {
     const [created] = await db
@@ -32,7 +35,9 @@ app.get('/api/v1/students/:id', async (c) => {
         .select()
         .from(students)
         .where(eq(students.studentId, c.req.param('id')))
-    if (!student) return c.json({ error: 'Student not found' }, 404)
+    if (!student) {
+        return c.json({ error: 'Student not found' }, 404)
+    }
     return c.json(student)
 })
 
@@ -42,7 +47,9 @@ app.put('/api/v1/students/:id', zValidator('json', updateStudentSchema), async (
         .set(c.req.valid('json'))
         .where(eq(students.studentId, c.req.param('id')))
         .returning()
-    if (!updated) return c.json({ error: 'Student not found' }, 404)
+    if (!updated) {
+        return c.json({ error: 'Student not found' }, 404)
+    }
     return c.json(updated)
 })
 
@@ -51,7 +58,9 @@ app.delete('/api/v1/students/:id', async (c) => {
         .delete(students)
         .where(eq(students.studentId, c.req.param('id')))
         .returning()
-    if (!deleted) return c.json({ error: 'Student not found' }, 404)
+    if (!deleted) {
+        return c.json({ error: 'Student not found' }, 404)
+    }
     return c.json(deleted)
 })
 
