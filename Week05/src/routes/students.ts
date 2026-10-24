@@ -46,7 +46,7 @@ app.post("/", zValidator("json", studentSchema), async (c) => {
             .insert(students)
             .values(body)
             .returning();
-        return c.json(created, 201);
+        return c.json({ message: "Student created", student: created }, 201);
     }
     catch (err) {
         if (isUniqueViolation(err)) {
@@ -71,7 +71,7 @@ app.put("/:studentId", zValidator("param", idParam), zValidator("json", updateSc
         if (!updated) {
             return c.json({ error: "Student not found" }, 404);
         }
-        return c.json(updated);
+        return c.json({ message: "Student updated", student: updated }, 200);
     }
     catch (err) {
         if (isUniqueViolation(err)) {
@@ -90,7 +90,7 @@ app.delete("/:studentId", zValidator("param", idParam), async (c) => {
     if (!deleted) {
         return c.json({ error: "Student not found" }, 404);
     }
-    return c.json({ message: "Student deleted", student: deleted });
+    return c.json({ message: "Student deleted", student: deleted }, 200);
 });
 
 export default app;
