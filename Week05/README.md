@@ -1,6 +1,6 @@
 # Student CRUD API
 
-A basic student CRUD REST API built with **Hono**, **Bun**, **TypeScript**, **Drizzle ORM** and **PostgreSQL (Neon)**.
+A basic student CRUD REST API for the IoT API Lab, built with **Hono**, **Bun**, **TypeScript**, **Drizzle ORM** and **PostgreSQL (Neon)**.
 
 Each student has: `studentId`, `firstName`, `lastName`, `dateOfBirth`, `gender`.
 
@@ -12,6 +12,7 @@ Each student has: `studentId`, `firstName`, `lastName`, `dateOfBirth`, `gender`.
 ## Install
 
 ```sh
+cd Week05
 bun install
 ```
 
@@ -45,7 +46,7 @@ bunx --bun drizzle-kit push
 bun run dev
 ```
 
-The server starts at http://localhost:3000
+The server starts at http://localhost:3000 and reloads when you edit the code.
 
 ## Authentication
 
@@ -55,7 +56,7 @@ All `/api/*` routes require a bearer token equal to `SECRET_PASSWORD`:
 Authorization: Bearer your_secret_password
 ```
 
-A missing or wrong token returns `401 Unauthorized`.
+A missing or wrong token returns `401 Unauthorized`. The health check `/` needs no token.
 
 ## Data model
 
@@ -72,11 +73,13 @@ A missing or wrong token returns `401 Unauthorized`.
 | Method | Endpoint | Description |
 |---|---|---|
 | GET | `/` | Health check (no auth) |
-| GET | `/api/v1/students` | List all students |
+| GET | `/api/v1/students` | List all students (sorted by `studentId`) |
 | GET | `/api/v1/students/:studentId` | Get one student |
 | POST | `/api/v1/students` | Create a student |
 | PUT | `/api/v1/students/:studentId` | Update a student (partial fields allowed) |
 | DELETE | `/api/v1/students/:studentId` | Delete a student |
+
+All responses are pretty-printed JSON.
 
 ## Examples
 
@@ -90,11 +93,11 @@ Input:
 curl http://localhost:3000/
 ```
 
-Output:
+Output `200 OK`:
 
 ```json
 {
-  "message": "Student API is running"
+    "message": "Student API is running"
 }
 ```
 
@@ -110,11 +113,14 @@ Output `201 Created`:
 
 ```json
 {
-    "studentId": "67079999",
-    "firstName": "John",
-    "lastName": "Doe",
-    "dateOfBirth": "2002-05-14",
-    "gender": "male"
+    "message": "Student created",
+    "student": {
+        "studentId": "67079999",
+        "firstName": "John",
+        "lastName": "Doe",
+        "dateOfBirth": "2002-05-14",
+        "gender": "male"
+    }
 }
 ```
 
@@ -174,11 +180,14 @@ Output `200 OK`:
 
 ```json
 {
-    "studentId": "67079999",
-    "firstName": "Johnny",
-    "lastName": "Doe",
-    "dateOfBirth": "2002-05-14",
-    "gender": "male"
+    "message": "Student updated",
+    "student": {
+        "studentId": "67079999",
+        "firstName": "Johnny",
+        "lastName": "Doe",
+        "dateOfBirth": "2002-05-14",
+        "gender": "male"
+    }
 }
 ```
 
@@ -209,23 +218,28 @@ Output `200 OK`:
 
 | Status | When | Body |
 |---|---|---|
-| 400 | Invalid input (impossible date, wrong gender, `studentId` not exactly 8 chars, name over 50 chars, empty update body) | Validation error details |
+| 400 | Invalid input (impossible date, wrong gender, `studentId` not exactly 8 chars, name over 50 chars) | Validation error details |
+| 400 | PUT with an empty body | `{ "error": "No fields to update" }` |
 | 401 | Missing or wrong bearer token | `Unauthorized` |
-| 404 | Student or route not found | `{ "error": "Student not found" }` |
-| 409 | `studentId` already exists | `{ "error": "studentId already exists" }` |
+| 404 | Student not found | `{ "error": "Student not found" }` |
+| 404 | Unknown route | `{ "error": "Not found" }` |
+| 409 | `studentId` already exists (create or update) | `{ "error": "studentId already exists" }` |
 | 500 | Unexpected server error | `{ "error": "Internal server error" }` |
 
 ## Project structure
 
 ```
-src/
-├── index.ts              # App entry, pretty JSON, routes and error handlers
-├── db/
-│   ├── index.ts          # Database connection (pg + Drizzle)
-│   └── schema.ts         # students table
-├── middleware/
-│   └── auth.ts           # Bearer token auth
-└── routes/
-    └── students.ts       # CRUD routes with validation
-drizzle.config.ts         # Drizzle Kit config
+Week05/
+├── src/
+│   ├── index.ts              # App entry, pretty JSON, routes, error handlers
+│   ├── db/
+│   │   ├── index.ts          # Database connection (pg + Drizzle)
+│   │   └── schema.ts         # students table
+│   ├── middleware/
+│   │   └── auth.ts           # Bearer token auth
+│   └── routes/
+│       └── students.ts       # CRUD routes with validation
+├── drizzle.config.ts         # Drizzle Kit config
+├── .env.example              # Environment variable template
+└── package.json
 ```
