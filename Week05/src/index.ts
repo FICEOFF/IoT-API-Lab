@@ -1,67 +1,26 @@
-import { Hono } from 'hono'
-import { eq } from 'drizzle-orm'
-import { db } from './db/index'
-import { authMiddleware } from './middleware/auth'
-import { students } from './db/schema'
-import { zValidator } from '@hono/zod-validator'
-import { createStudentSchema, updateStudentSchema } from './schemas/students'
+import { Hono } from "hono";
+import { auth } from "./middleware/auth";
+import studentRoutes from "./routes/students";
+import { prettyJSON } from "hono/pretty-json";
 
-const app = new Hono()
+const app = new Hono();
 
-app.get('/', (c) => {
-    return c.text('Hello Hono!')
-})
+app.use(prettyJSON({ space: 4, force: true }));
 
-app.use('/api/*', authMiddleware)
+app.get("/", (c) => {
+    return c.json({ message: "Student API is running" })
+});
 
-app.post('/api/v1/students', zValidator('json', createStudentSchema), async (c) => {
-    const [created] = await db
-        .insert(students)
-        .values(c.req.valid('json'))
-        .onConflictDoNothing()
-        .returning()
-    if (!created) {
-        return c.json({ error: 'Student already exists' }, 409)
-    }
-    return c.json(created, 201)
-})
+app.use("/api/*", auth);
+app.route("/api/v1/students", studentRoutes);
 
-app.get('/api/v1/students', async (c) => {
-    return c.json(await db.select().from(students))
-})
+app.notFound((c) => {
+    return c.json({ error: "Not found" }, 404)
+});
 
-app.get('/api/v1/students/:id', async (c) => {
-    const [student] = await db
-        .select()
-        .from(students)
-        .where(eq(students.studentId, c.req.param('id')))
-    if (!student) {
-        return c.json({ error: 'Student not found' }, 404)
-    }
-    return c.json(student)
-})
+app.onError((err, c) => {
+    console.error(err);
+    return c.json({ error: "Internal server error" }, 500);
+});
 
-app.put('/api/v1/students/:id', zValidator('json', updateStudentSchema), async (c) => {
-    const [updated] = await db
-        .update(students)
-        .set(c.req.valid('json'))
-        .where(eq(students.studentId, c.req.param('id')))
-        .returning()
-    if (!updated) {
-        return c.json({ error: 'Student not found' }, 404)
-    }
-    return c.json(updated)
-})
-
-app.delete('/api/v1/students/:id', async (c) => {
-    const [deleted] = await db
-        .delete(students)
-        .where(eq(students.studentId, c.req.param('id')))
-        .returning()
-    if (!deleted) {
-        return c.json({ error: 'Student not found' }, 404)
-    }
-    return c.json(deleted)
-})
-
-export default app
+export default { port: 3000, fetch: app.fetch };
